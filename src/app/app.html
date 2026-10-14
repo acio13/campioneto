@@ -1,0 +1,133 @@
+<a class="skip-link" href="#contenuto">Vai al contenuto</a>
+<div class="page">
+  <main id="contenuto" tabindex="-1">
+    @if (loading()) {
+      <p class="notice" role="status">Caricamento del campionato...</p>
+    } @else if (error()) {
+      <div class="notice" role="alert">
+        <p>{{ error() }}</p>
+        <button type="button" (click)="reload()">Riprova</button>
+      </div>
+    }
+    @if (view(); as vm) {
+      <section id="calendario" aria-label="Giornate e risultati">
+        <div class="filters">
+          <label
+            >Giornata
+            <select
+              #roundSelect
+              [value]="selectedRound()"
+              (change)="selectedRound.set(+roundSelect.value)"
+            >
+              @for (round of vm.rounds; track round.id) {
+                <option [value]="round.id">{{ round.label }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <div class="round-navigation">
+          <button
+            type="button"
+            [disabled]="selectedRound() === 1"
+            (click)="selectedRound.update(previousRound)"
+          >
+            ← Precedente
+          </button>
+          <span aria-live="polite">{{ vm.rounds[selectedRound() - 1].label }}</span>
+          <button
+            type="button"
+            [disabled]="selectedRound() === vm.rounds.length"
+            (click)="selectedRound.update(nextRound)"
+          >
+            Successiva →
+          </button>
+        </div>
+        <div class="match-list" aria-live="polite">
+          @for (match of matches(); track match.id) {
+            <article class="match">
+              <div class="match-meta">
+                <time [attr.datetime]="match.date + 'T' + match.time"
+                  >{{ match.date | date: 'dd/MM/yyyy' }} · {{ match.time }}</time
+                >
+              </div>
+              <div class="match-teams">
+                <span class="home-team">{{ teamName(match.homeId) }}<small>Casa</small></span>
+                @if (vm.results.get(match.id); as result) {
+                  <strong class="score" aria-label="Risultato"
+                    >{{ result.homeGoals }} - {{ result.awayGoals }}</strong
+                  >
+                } @else {
+                  <span class="score pending" aria-label="Risultato non pubblicato">- : -</span>
+                }
+                <span class="away-team">{{ teamName(match.awayId) }}<small>Trasferta</small></span>
+              </div>
+              <p class="venue">
+                <a
+                  [href]="mapsUrl(match.venue)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [attr.aria-label]="match.venue + ' - Apri in Google Maps (nuova scheda)'"
+                  >{{ match.venue }}</a
+                >
+              </p>
+            </article>
+          } @empty {
+            <p class="notice">Nessuna partita per i filtri selezionati.</p>
+          }
+        </div>
+      </section>
+
+      <section id="classifica" aria-label="Classifica completa">
+        <div
+          class="table-scroll"
+          role="region"
+          aria-label="Classifica, tabella scorrevole"
+          tabindex="0"
+        >
+          <table>
+            <caption class="sr-only">
+              Classifica generale
+              {{
+                vm.calendar.category
+              }}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Pos.</th>
+                <th scope="col">Squadra</th>
+                <th scope="col">Punti</th>
+                <th scope="col"><abbr title="Gare giocate">G</abbr></th>
+                <th scope="col"><abbr title="Vittorie">V</abbr></th>
+                <th scope="col"><abbr title="Pareggi">N</abbr></th>
+                <th scope="col"><abbr title="Sconfitte">P</abbr></th>
+                <th scope="col"><abbr title="Gol fatti">GF</abbr></th>
+                <th scope="col"><abbr title="Gol subiti">GS</abbr></th>
+                <th scope="col"><abbr title="Differenza reti">DR</abbr></th>
+                <th scope="col">
+                  <abbr title="Punti negli scontri diretti fra squadre a pari punti">SD</abbr>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of vm.standings; track row.id) {
+                <tr>
+                  <td class="position">{{ row.position }}</td>
+                  <th scope="row">{{ row.name }}</th>
+                  <td class="points">{{ row.points }}</td>
+                  <td>{{ row.played }}</td>
+                  <td>{{ row.won }}</td>
+                  <td>{{ row.drawn }}</td>
+                  <td>{{ row.lost }}</td>
+                  <td>{{ row.goalsFor }}</td>
+                  <td>{{ row.goalsAgainst }}</td>
+                  <td>{{ row.goalDifference > 0 ? '+' : '' }}{{ row.goalDifference }}</td>
+                  <td>{{ row.headToHead }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  </main>
+</div>

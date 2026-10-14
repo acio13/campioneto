@@ -2,7 +2,7 @@
 
 Angular 21 per il campionato CSI Lodi/Crema di calcio a 5, Open M / GIR,
 stagione 2026/2027. Calendario, squadre, giornate e risultati provengono da
-**Neon PostgreSQL**, tramite una funzione serverless **Netlify** di sola lettura.
+**Neon PostgreSQL**, tramite funzioni serverless **Netlify**.
 La classifica viene calcolata nel browser con le regole concordate.
 
 ## Collegamento Neon e pubblicazione Netlify
@@ -31,7 +31,7 @@ Non e' possibile verificare la connessione al proprio database finche'
 `DATABASE_URL` non e' configurata nell'ambiente di esecuzione.
 
 **Ruolo consigliato:** usare una connection string con un ruolo PostgreSQL
-dedicato di sola lettura, non il proprietario delle tabelle. Un amministratore
+dedicato con lettura del calendario e scrittura solo dei risultati, non il proprietario delle tabelle. Un amministratore
 puo' attribuire i permessi a un ruolo gia' creato, sostituendo `campioneto_reader`:
 
 ```sql
@@ -39,11 +39,14 @@ GRANT USAGE ON SCHEMA campioneto TO campioneto_reader;
 GRANT SELECT ON campioneto.championships, campioneto.teams,
   campioneto.championship_teams, campioneto.matchdays,
   campioneto.matches, campioneto.results TO campioneto_reader;
+GRANT INSERT, UPDATE ON campioneto.results TO campioneto_reader;
 ```
 
-L'endpoint e' pubblico come il calendario, accetta solo GET e non consente
-scritture. Per aggiungere risultati si continua a usare l'editor SQL di Neon
-con un ruolo autorizzato, separato dalle credenziali di lettura dell'app.
+`GET /api/championship` legge il calendario e `PUT /api/results` inserisce o
+corregge i risultati. **Per scelta esplicita, la scrittura e' pubblica senza
+login: chiunque raggiunga il sito o l'API puo' alterare risultati e classifica.**
+In caso di modifiche simultanee prevale l'ultimo salvataggio nel database.
+La validazione dei punteggi non sostituisce un controllo di accesso.
 Non vengono esposti password, connection string o dettagli degli errori del driver.
 
 ## Sviluppo locale
@@ -71,7 +74,21 @@ l'autenticazione e il collegamento al progetto Netlify.
 
 ## Aggiornamento dei risultati
 
-I risultati si modificano **nel database**, non nei file Angular:
+Premere il risultato (oppure `- : -`) nella scheda della partita per aprire
+un piccolo popup. Compilare **Gol casa** e **Gol trasferta**, poi premere
+**Salva**; **Annulla** o Escape chiudono senza salvare. Durante il salvataggio
+il popup non si chiude; dopo la conferma del database si chiude automaticamente.
+Sono obbligatori entrambi i valori, interi da 0 a 2147483647;
+lo 0-0 e' un risultato giocato, non una gara senza risultato.
+I campi sono precompilati se esiste gia' un risultato. Il salvataggio confermato
+aggiorna subito punteggio e classifica, senza cambiare giornata.
+Se fallisce, i valori inseriti restano disponibili per riprovare e la classifica
+non cambia. Un timeout puo' verificarsi dopo la scrittura: ricaricare per verificare
+oppure riprovare (il salvataggio sostituisce il risultato, non lo duplica).
+`DATABASE_URL` deve usare un ruolo con permessi INSERT e UPDATE su `campioneto.results`;
+se era di sola lettura, attribuire i permessi SQL indicati sopra.
+
+In alternativa si possono aggiornare i risultati nell'editor SQL di Neon:
 
 ```sql
 -- Esempio: sostituire con il punteggio reale prima di eseguire.
@@ -91,7 +108,7 @@ Per annullare un risultato:
 DELETE FROM campioneto.results WHERE match_id = '2615A1';
 ```
 
-Dopo un aggiornamento SQL basta **ricaricare la pagina**, senza ricompilare
+Dopo un aggiornamento dall'editor SQL basta **ricaricare la pagina**, senza ricompilare
 o ripubblicare il sito. L'API non usa cache. Non e' previsto un aggiornamento
 automatico in tempo reale delle pagine gia' aperte.
 In caso di errore l'app mostra un messaggio e il pulsante Riprova, senza
@@ -121,6 +138,7 @@ cliccabili che aprono Google Maps in una nuova scheda.
 Le giornate disponibili e i limiti di navigazione sono ricavati dal database.
 
 - `netlify/functions/championship.mjs`: lettura Neon e risposta `/api/championship`.
+- `netlify/functions/results.mjs`: inserimento/correzione pubblica dei risultati.
 - `netlify.toml`: build, sviluppo locale, funzioni e redirect.
 - `src/app/championship-data.ts`: validazione dei dati ricevuti dall'API.
 - `src/app/championship.ts`: calcolo della classifica.

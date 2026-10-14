@@ -23,6 +23,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/results"
+  to = "/.netlify/functions/results"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

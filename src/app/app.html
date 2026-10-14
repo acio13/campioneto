@@ -51,15 +51,24 @@
                 >
               </div>
               <div class="match-teams">
-                <span class="home-team">{{ teamName(match.homeId) }}<small>Casa</small></span>
-                @if (vm.results.get(match.id); as result) {
-                  <strong class="score" aria-label="Risultato"
-                    >{{ result.homeGoals }} - {{ result.awayGoals }}</strong
-                  >
-                } @else {
-                  <span class="score pending" aria-label="Risultato non pubblicato">- : -</span>
-                }
-                <span class="away-team">{{ teamName(match.awayId) }}<small>Trasferta</small></span>
+                <span class="home-team">{{ teamName(match.homeId) }}</span>
+                <button
+                  type="button"
+                  class="score edit-score"
+                  (click)="openEditor(match.id)"
+                  [attr.aria-label]="
+                    'Modifica risultato: ' + teamName(match.homeId) + ' - ' + teamName(match.awayId)
+                  "
+                  aria-haspopup="dialog"
+                  title="Inserisci o modifica risultato"
+                >
+                  @if (vm.results.get(match.id); as result) {
+                    {{ result.homeGoals }} - {{ result.awayGoals }}
+                  } @else {
+                    <span class="pending">- : -</span>
+                  }
+                </button>
+                <span class="away-team">{{ teamName(match.awayId) }}</span>
               </div>
               <p class="venue">
                 <a
@@ -75,6 +84,63 @@
             <p class="notice">Nessuna partita per i filtri selezionati.</p>
           }
         </div>
+        <dialog
+          #resultDialog
+          class="result-dialog"
+          aria-labelledby="result-title"
+          (cancel)="cancelEditor($event)"
+        >
+          @if (activeMatch(); as match) {
+            @let draft = editor(match.id);
+            <h2 id="result-title">Risultato partita</h2>
+            <form
+              class="result-editor"
+              (submit)="$event.preventDefault(); saveResult(match.id)"
+              novalidate
+            >
+              <label
+                >{{ teamName(match.homeId) }} <small>Gol casa</small>
+                <input
+                  #homeInput
+                  type="number"
+                  min="0"
+                  max="2147483647"
+                  step="1"
+                  inputmode="numeric"
+                  autofocus
+                  [value]="draft.homeGoals"
+                  [disabled]="draft.saving"
+                  (input)="editGoals(match.id, 'homeGoals', homeInput.value)"
+                />
+              </label>
+              <label
+                >{{ teamName(match.awayId) }} <small>Gol trasferta</small>
+                <input
+                  #awayInput
+                  type="number"
+                  min="0"
+                  max="2147483647"
+                  step="1"
+                  inputmode="numeric"
+                  [value]="draft.awayGoals"
+                  [disabled]="draft.saving"
+                  (input)="editGoals(match.id, 'awayGoals', awayInput.value)"
+                />
+              </label>
+              @if (draft.error) {
+                <p class="save-error" role="alert">{{ draft.error }}</p>
+              }
+              <div class="dialog-actions">
+                <button type="button" [disabled]="draft.saving" (click)="closeEditor()">
+                  Annulla
+                </button>
+                <button type="submit" [disabled]="draft.saving">
+                  {{ draft.saving ? 'Salvataggio...' : 'Salva' }}
+                </button>
+              </div>
+            </form>
+          }
+        </dialog>
       </section>
 
       <section id="classifica" aria-label="Classifica completa">

@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+import { queryDatabase } from '../lib/database.mjs';
 
 const championshipId = 'csi-lodi-crema-open-m-gir-2026-2027';
 
@@ -66,11 +66,4 @@ export function createHandler(query, logError = console.error) {
   };
 }
 
-export default createHandler(async (query, params) => {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) throw new Error('DATABASE_URL non configurata');
-  const sql = neon(connectionString);
-  return sql.query(query, params, {
-    fetchOptions: { signal: AbortSignal.timeout(15000) },
-  });
-});
+export default createHandler(queryDatabase);

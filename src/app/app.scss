@@ -104,6 +104,7 @@ label {
   min-width: 0;
 }
 select,
+input,
 button {
   font: inherit;
   color: var(--text);
@@ -112,6 +113,59 @@ button {
   border-radius: 0.6rem;
   min-height: 2.8rem;
   padding: 0.65rem 0.8rem;
+}
+.result-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 0.5rem;
+  max-width: 30rem;
+  margin: 1rem auto;
+}
+.result-dialog {
+  width: min(26rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  color: var(--text);
+}
+.result-dialog::backdrop {
+  background: rgb(0 0 0 / 40%);
+}
+.result-dialog h2 {
+  margin: 0 0 1.5rem;
+  font-size: 1.2rem;
+}
+.result-editor .save-error,
+.dialog-actions {
+  grid-column: 1 / -1;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.edit-score {
+  padding: 0.35rem 0.5rem;
+  border-style: dashed;
+}
+.result-editor input {
+  width: 100%;
+  min-width: 0;
+}
+.save-error,
+.save-success {
+  text-align: center;
+  font-size: 0.875rem;
+}
+.save-error {
+  color: #a12622;
+}
+.save-success {
+  color: var(--accent);
 }
 select {
   width: 100%;
